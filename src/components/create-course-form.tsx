@@ -13,7 +13,9 @@ import { Plus, Save } from "lucide-react"
 const LessonSchema = z.object({
     title: z.string().min(1, "Título da aula é obrigatório"),
     description: z.string().optional(),
-    videoFile: z.any().optional(),
+    videoUrl: z.string().optional().nullable(),
+    videoBlobId: z.string().optional().nullable(),
+    videoFileName: z.string().optional().nullable(),
 })
 
 const DisciplineSchema = z.object({
@@ -46,76 +48,23 @@ export function CreateCourseForm() {
 
     const onAddDiscipline = () => append({ title: "", lessons: [] })
 
-    // Build a lightweight metadata payload for requesting presigned URLs
-    const buildPresignPayload = (data: CourseForm) => {
-        const disciplines = (data.disciplines || []).map((d, dIndex) => ({
-            title: d.title,
-            lessons: (d.lessons || []).map((l, lIndex) => {
-                const file = l.videoFile as unknown as File | undefined
-                return {
-                    title: l.title,
-                    description: l.description,
-                    videoFilePresent: file instanceof File,
-                    videoFileName: file instanceof File ? file.name : undefined,
-                    videoContentType: file instanceof File ? file.type : undefined,
-                }
-            }),
-        }))
-        return { title: data.title, description: data.description, disciplines }
-    }
-
     const onSubmit = async (data: CourseForm) => {
         try {
-            // 1) Ask server for presigned URLs for files that will be uploaded
-            const presignReq = buildPresignPayload(data)
-            const presignResp = await fetch("/api/courses/presign", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(presignReq) })
-            const presignJson = await presignResp.json()
-            if (!presignResp.ok || !presignJson.ok) {
-                console.error("Presign failed:", presignJson)
-                alert(`Erro ao preparar upload: ${presignJson?.error ?? presignResp.status}`)
-                return
-            }
-
-            const presignedMap: Record<string, { key: string; presignedUrl: string; publicUrl: string }> = presignJson.presigned || {}
-
-            // 2) Upload files directly to R2 using the presigned PUT URLs
-            const uploadPromises: Promise<void>[] = []
-                ; (data.disciplines || []).forEach((d, dIndex) => {
-                    ; (d.lessons || []).forEach((l, lIndex) => {
-                        const file = l.videoFile as unknown as File | undefined
-                        const fileKey = `file-${dIndex}-${lIndex}`
-                        const presigned = presignedMap[fileKey]
-                        if (file instanceof File && presigned) {
-                            const p = fetch(presigned.presignedUrl, { method: "PUT", headers: { "Content-Type": file.type || "application/octet-stream" }, body: file }).then((r) => {
-                                if (!r.ok) throw new Error(`Upload failed for ${fileKey}: ${r.status}`)
-                            })
-                            uploadPromises.push(p)
-                        }
-                    })
-                })
-
-            await Promise.all(uploadPromises)
-
-            // 3) Build create payload with returned keys and public URLs
+            // Build create payload with video information
             const createPayload = {
                 title: data.title,
                 description: data.description,
-                disciplines: (data.disciplines || []).map((d, dIndex) => ({
+                disciplines: (data.disciplines || []).map((d) => ({
                     title: d.title,
-                    lessons: (d.lessons || []).map((l, lIndex) => {
-                        const fileKey = `file-${dIndex}-${lIndex}`
-                        const presigned = presignedMap[fileKey]
-                        return {
-                            title: l.title,
-                            description: l.description,
-                            videoKey: presigned?.key,
-                            videoUrl: presigned?.publicUrl,
-                        }
-                    }),
+                    lessons: (d.lessons || []).map((l) => ({
+                        title: l.title,
+                        description: l.description || undefined,
+                        videoUrl: l.videoUrl || undefined,
+                        videoBlobId: l.videoBlobId || undefined,
+                    })),
                 })),
             }
 
-            // 4) Create course record in DB
             const res = await fetch("/api/courses", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(createPayload) })
             const json = await res.json()
 

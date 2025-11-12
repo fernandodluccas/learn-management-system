@@ -1,9 +1,12 @@
+"use client"
+
 import { CreateCourseForm } from "@/components/create-course-form"
 import { Header } from "@/components/header"
+import { ProtectedRoute } from "@/components/protected-route"
 
 export default function CreateCoursePage() {
     return (
-        <>
+        <ProtectedRoute>
             <Header />
             <main className="min-h-screen bg-background p-6 pt-28">
                 <div className="max-w-4xl mx-auto">
@@ -13,6 +16,6 @@ export default function CreateCoursePage() {
                     <CreateCourseForm />
                 </div>
             </main>
-        </>
+        </ProtectedRoute>
     )
 }

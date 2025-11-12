@@ -33,12 +33,13 @@ export function CourseCard({
     }
 
     return (
-        <Card className="overflow-hidden flex flex-col h-full hover:shadow-md transition-shadow duration-300">
+        <Card className="overflow-hidden flex flex-col h-full hover:shadow-md transition-shadow duration-300 cursor-pointer">
             {/* Thumbnail com Play Button */}
             <div
                 className="relative w-full h-40 bg-muted overflow-hidden flex items-center justify-center group"
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
+                onClick={handleAccess}
             >
                 <div className="w-full h-full bg-linear-to-br from-primary/10 to-primary/5" />
 

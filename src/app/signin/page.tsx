@@ -15,10 +15,10 @@ import { Input } from "@/components/ui/input"
 import z from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { signIn } from "@/lib/actions/auth-actions"
+import { authClient } from "@/lib/auth-client"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
-import { redirect } from "next/navigation"
+import { useRouter } from "next/navigation"
 
 const schema = z.object({
     email: z.string().email("Endereço de e-mail inválido"),
@@ -28,6 +28,7 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>
 
 export default function LoginPage() {
+    const router = useRouter()
     const {
         register,
         handleSubmit,
@@ -42,13 +43,24 @@ export default function LoginPage() {
 
     const onSubmit = async (data: FormValues) => {
         try {
-            await signIn(data.email, data.password)
+            const result = await authClient.signIn.email({
+                email: data.email,
+                password: data.password,
+            })
+
+            if (result.error) {
+                toast.error("Erro ao entrar", {
+                    description: result.error.message || "Verifique suas credenciais e tente novamente.",
+                })
+                return
+            }
 
             toast.success("Login realizado com sucesso!", {
                 description: "Bem-vindo de volta 👋",
             })
 
-            redirect("/")
+            // Redirecionar após o login
+            router.push("/courses")
         } catch (error: any) {
             toast.error("Erro ao entrar", {
                 description: error?.message || "Verifique suas credenciais e tente novamente.",
@@ -69,7 +81,7 @@ export default function LoginPage() {
                             <div className="grid gap-4">
                                 {/* Google Button */}
                                 <div className="flex flex-col gap-2">
-                                    <Button variant="outline" type="button" className="justify-center gap-3">
+                                    <Button variant="outline" type="button" className="justify-center gap-3 cursor-pointer">
                                         <svg
                                             xmlns="http://www.w3.org/2000/svg"
                                             viewBox="0 0 24 24"
@@ -128,7 +140,7 @@ export default function LoginPage() {
 
                                 {/* Botão Entrar */}
                                 <div>
-                                    <Button type="submit" className="w-full" disabled={isSubmitting}>
+                                    <Button type="submit" className="w-full cursor-pointer" disabled={isSubmitting}>
                                         {isSubmitting ? (
                                             <>
                                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -143,7 +155,7 @@ export default function LoginPage() {
                                 {/* Link para cadastro */}
                                 <p className="text-center text-sm text-muted-foreground">
                                     Não tem uma conta?{" "}
-                                    <Link href="/signup" className="underline">
+                                    <Link href="/signup" className="underline cursor-pointer hover:text-foreground">
                                         Cadastre-se
                                     </Link>
                                 </p>

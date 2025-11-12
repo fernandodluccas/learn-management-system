@@ -3,127 +3,152 @@
 import { Header } from "@/components/header"
 import { CourseCard } from "@/components/course-card"
 import { Button } from "@/components/ui/button"
+import { ProtectedRoute } from "@/components/protected-route"
 import Link from "next/link"
-import { Plus } from "lucide-react"
+import { Plus, Loader2, BookOpen, GraduationCap, Video, Sparkles } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
+
+type Lesson = {
+    id: string
+    title: string
+    description: string | null
+}
+
+type Discipline = {
+    id: string
+    title: string
+    lessons: Lesson[]
+}
 
 type Course = {
     id: string
     title: string
-    progress: number
-    modules: number
-    lessons: number
-    description: string
-    isStarted: boolean
-    thumbnail: string
+    description: string | null
+    disciplines: Discipline[]
+    createdAt: string
+    updatedAt: string
 }
-
-const mockCourses: Course[] = [
-    {
-        id: "1",
-        title: "Design de Interface Avançado",
-        progress: 17,
-        modules: 3,
-        lessons: 8,
-        description: "Aprenda os princípios avançados de design de interface com estudos de caso reais.",
-        isStarted: true,
-        thumbnail: "/design-interface-course.jpg",
-    },
-    {
-        id: "2",
-        title: "Desenvolvimento Web Full Stack",
-        progress: 0,
-        modules: 5,
-        lessons: 12,
-        description: "Domine o desenvolvimento web moderno com React, Node.js e bancos de dados.",
-        isStarted: false,
-        thumbnail: "/fullstack-development-course.png",
-    },
-    {
-        id: "3",
-        title: "Fundamentos de UX/UI",
-        progress: 45,
-        modules: 2,
-        lessons: 6,
-        description: "Inicie sua jornada em design de experiência do usuário.",
-        isStarted: true,
-        thumbnail: "/ux-ui-fundamentals.jpg",
-    },
-    {
-        id: "4",
-        title: "Marketing Digital Essencial",
-        progress: 0,
-        modules: 4,
-        lessons: 10,
-        description: "Estratégias efetivas de marketing digital para o século XXI.",
-        isStarted: false,
-        thumbnail: "/digital-marketing-strategy.png",
-    },
-    {
-        id: "5",
-        title: "Python para Ciência de Dados",
-        progress: 62,
-        modules: 6,
-        lessons: 15,
-        description: "Aprenda Python e suas bibliotecas para análise de dados.",
-        isStarted: true,
-        thumbnail: "/python-data-science.png",
-    },
-    {
-        id: "6",
-        title: "Gestão de Projetos Ágil",
-        progress: 0,
-        modules: 3,
-        lessons: 7,
-        description: "Metodologias ágeis e scrum para gestão eficiente de projetos.",
-        isStarted: false,
-        thumbnail: "/agile-project-management.png",
-    },
-]
 
 export default function CoursesPage() {
     const router = useRouter()
+    const [courses, setCourses] = useState<Course[]>([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
 
-    const handleCourseClick = (course: Course) => {
-        router.push(`/courses/${course.id}`)
+    useEffect(() => {
+        fetchCourses()
+    }, [])
+
+    const fetchCourses = async () => {
+        try {
+            setLoading(true)
+            setError(null)
+
+            const response = await fetch("/api/courses")
+
+            if (!response.ok) {
+                throw new Error("Erro ao buscar cursos")
+            }
+
+            const data = await response.json()
+            setCourses(data.courses || [])
+        } catch (err) {
+            console.error("Error fetching courses:", err)
+            setError(err instanceof Error ? err.message : "Erro ao carregar cursos")
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    // Calcula estatísticas do curso
+    const getCourseStats = (course: Course) => {
+        const disciplinesCount = course.disciplines.length
+        const lessonsCount = course.disciplines.reduce(
+            (total, discipline) => total + discipline.lessons.length,
+            0
+        )
+        return { disciplinesCount, lessonsCount }
     }
 
     return (
-        <main className="min-h-screen bg-background">
-            {/* Header global */}
-            <Header />
+        <ProtectedRoute>
+            <main className="min-h-screen bg-background">
+                {/* Header global */}
+                <Header />
 
-            {/* Conteúdo principal */}
-            <div className="pt-20 px-4 sm:px-6 pb-12">
-                {/* Título e botão */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-10 gap-4">
-                    <div>
-                        <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-2">Meus Cursos</h2>
-                        <p className="text-base text-muted-foreground">
-                            Continue seu aprendizado de onde parou
-                        </p>
+                {/* Conteúdo principal */}
+                <div className="pt-20 px-4 sm:px-6 pb-12">
+                    {/* Título e botão */}
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-10 gap-4 mt-8">
+                        <div>
+                            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-2">Meus Cursos</h2>
+                            <p className="text-base text-muted-foreground">
+                                Continue seu aprendizado de onde parou
+                            </p>
+                        </div>
+
+                        <Link href="/create-course" className="w-full sm:w-auto">
+                            <Button className="w-full sm:w-auto flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer">
+                                <Plus className="w-4 h-4" />
+                                Novo Curso
+                            </Button>
+                        </Link>
                     </div>
 
-                    <Link href="/create-course" className="w-full sm:w-auto">
-                        <Button className="w-full sm:w-auto flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground">
-                            <Plus className="w-4 h-4" />
-                            Novo Curso
-                        </Button>
-                    </Link>
-                </div>
+                    {/* Grade de cursos */}
+                    {loading ? (
+                        <div className="flex items-center justify-center py-20">
+                            <div className="flex flex-col items-center gap-4">
+                                <Loader2 className="w-12 h-12 animate-spin text-primary" />
+                                <p className="text-muted-foreground">Carregando cursos...</p>
+                            </div>
+                        </div>
+                    ) : error ? (
+                        <div className="flex items-center justify-center py-20">
+                            <div className="text-center">
+                                <p className="text-destructive mb-4">{error}</p>
+                                <Button onClick={fetchCourses} variant="outline">
+                                    Tentar novamente
+                                </Button>
+                            </div>
+                        </div>
+                    ) : courses.length === 0 ? (
+                        <div className="flex items-center justify-center py-20 sm:py-32">
+                            <div className="text-center max-w-md px-4">
+                                {/* Ícone simples */}
+                                <div className="mb-6 flex justify-center">
+                                    <div className="p-6 rounded-2xl bg-muted/50">
+                                        <BookOpen className="w-16 h-16 text-muted-foreground/60" strokeWidth={1.5} />
+                                    </div>
+                                </div>
 
-                {/* Grade de cursos */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                    {mockCourses.map((course) => (
-                        <CourseCard
-                            key={course.id}
-                            {...course}
-                            onContinue={() => router.push(`/courses/${course.id}`)}
-                            onStart={() => router.push(`/courses/${course.id}`)}
-                        />
-                    ))}
+                                {/* Título e descrição */}
+                                <h3 className="text-xl font-semibold text-foreground mb-3">
+                                    Nenhum curso ainda
+                                </h3>
+                                <p className="text-sm text-muted-foreground mb-8">
+                                    Comece criando seu primeiro curso
+                                </p>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                            {courses.map((course) => (
+                                <CourseCard
+                                    key={course.id}
+                                    id={course.id}
+                                    title={course.title}
+                                    description={course.description || "Sem descrição"}
+                                    isStarted={false} // TODO: Implementar lógica de progresso
+                                    onContinue={() => router.push(`/courses/${course.id}`)}
+                                    onStart={() => router.push(`/courses/${course.id}`)}
+                                />
+                            ))}
+                        </div>
+                    )}
                 </div>
-            </div>
-        </main>
+            </main>
+        </ProtectedRoute>
     )
 }

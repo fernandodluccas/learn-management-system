@@ -20,7 +20,7 @@ interface DisciplineSectionProps {
 export function DisciplineSection({ index, control, register, setValue, watch, removeDiscipline }: DisciplineSectionProps) {
     const { fields: lessons, append, remove } = useFieldArray({ control, name: `disciplines.${index}.lessons` })
 
-    const addLesson = () => append({ title: "", description: "", videoFile: undefined })
+    const addLesson = () => append({ title: "", description: "" })
 
     return (
         <Card className="border-border">
@@ -31,7 +31,7 @@ export function DisciplineSection({ index, control, register, setValue, watch, r
                             <Input placeholder="Nome da disciplina" {...register(`disciplines.${index}.title`)} className="bg-muted/50" />
                         </div>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={removeDiscipline} className="text-destructive hover:bg-destructive/10">
+                    <Button variant="ghost" size="sm" onClick={removeDiscipline} className="text-destructive hover:bg-destructive/10 cursor-pointer">
                         <Trash2 size={18} />
                     </Button>
                 </div>
