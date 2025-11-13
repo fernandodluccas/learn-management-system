@@ -4,11 +4,9 @@ import { PrismaClient } from "@/generated/prisma/client"
 const prisma = new PrismaClient()
 
 // GET - Get a specific course by ID
-export async function GET(
-    request: NextRequest,
-    { params }: { params: { courseId: string } }
-) {
+export async function GET(request: NextRequest, context: any) {
     try {
+        const { params } = context as { params: { courseId: string } }
         const { courseId } = params
 
         if (!courseId) {
