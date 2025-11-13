@@ -234,7 +234,7 @@ npx prisma db seed
 - `DATABASE_URL`
 - `BETTER_AUTH_SECRET`
 - `BETTER_AUTH_URL`
-- `NEXT_PUBLIC_APP_URL`
+- `NEXT_PUBLIC_URL` (or `NEXT_PUBLIC_APP_URL` for backward compatibility)
 
 ### Outras plataformas
 
