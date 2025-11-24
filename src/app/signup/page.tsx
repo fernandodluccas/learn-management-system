@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input"
 import z from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { authClient } from "@/lib/auth-client"
+import { signUp } from "@/lib/actions/auth-actions"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
@@ -52,16 +52,12 @@ export default function RegisterPage() {
 
     const onSubmit = async (data: FormValues) => {
         try {
-            const result = await authClient.signUp.email({
-                name: data.name,
-                email: data.email,
-                password: data.password,
-            })
+            const result = await signUp(data.name, data.email, data.password)
 
-            if (result.error) {
-                toast.error("Erro ao criar conta", {
-                    description: result.error.message || "Tente novamente em instantes.",
-                })
+            // Treat absence of `user` as an error; `signUp` (server action) may return different shapes
+            if (!result || !('user' in result) || !(result as any).user) {
+                const message = (result as any)?.error?.message || "Tente novamente em instantes."
+                toast.error("Erro ao criar conta", { description: message })
                 return
             }
 

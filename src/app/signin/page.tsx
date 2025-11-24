@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input"
 import z from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { authClient } from "@/lib/auth-client"
+import { signIn } from "@/lib/actions/auth-actions"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
@@ -43,15 +43,13 @@ export default function LoginPage() {
 
     const onSubmit = async (data: FormValues) => {
         try {
-            const result = await authClient.signIn.email({
-                email: data.email,
-                password: data.password,
-            })
+            const result = await signIn(data.email, data.password)
 
-            if (result.error) {
-                toast.error("Erro ao entrar", {
-                    description: result.error.message || "Verifique suas credenciais e tente novamente.",
-                })
+            // `signIn` server action may return different shapes depending on the auth result.
+            // Check for a `user` property to determine success; otherwise treat as error.
+            if (!result || !('user' in result) || !(result as any).user) {
+                const message = (result as any)?.error?.message || "Verifique suas credenciais e tente novamente."
+                toast.error("Erro ao entrar", { description: message })
                 return
             }
 

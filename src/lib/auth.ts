@@ -12,5 +12,6 @@ export const auth = betterAuth({
     database: prismaAdapter(prisma, {
         provider: "postgresql",
     }),
+    trustedOrigins: ["https://learn-management-system-seven.vercel.app/"],
     plugins: [nextCookies()]
 });
