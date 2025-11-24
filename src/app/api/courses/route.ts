@@ -5,6 +5,8 @@ import { z } from "zod"
 
 const prisma = new PrismaClient()
 
+export const dynamic = 'force-dynamic'
+
 // Validation schemas
 const LessonSchema = z.object({
     title: z.string().min(1, "Título da aula é obrigatório"),
